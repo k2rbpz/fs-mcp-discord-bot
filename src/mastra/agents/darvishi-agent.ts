@@ -19,5 +19,8 @@ export const darvishiAgent = new Agent({
     storage: new LibSQLStore({
       url: 'file:../mastra.db', // path is relative to the .mastra/output directory
     }),
+    options: {
+      lastMessages: 100, // Adjust the memory depth here
+    },
   }),
 });

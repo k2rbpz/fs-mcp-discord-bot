@@ -51,8 +51,18 @@ client.on(Events.MessageCreate, async message => {
       },
     });
 
+    // Accumulate the response chunks into a single string.
+    let fullResponse = '';
     for await (const chunk of responseStream.textStream) {
-      if (chunk) await message.channel.send(chunk);
+      fullResponse += chunk;
+    }
+
+    // Discord has a 2000 character limit per message.
+    // Split the response into chunks if it's too long.
+    if (fullResponse) {
+      for (let i = 0; i < fullResponse.length; i += 2000) {
+        await message.channel.send(fullResponse.substring(i, i + 2000));
+      }
     }
   } catch (error) {
     console.error('Error processing message:', error);
