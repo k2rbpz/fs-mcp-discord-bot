@@ -28,7 +28,12 @@ client.on(Events.MessageCreate, async message => {
   if (!prompt) return;
   try {
     await message.channel.sendTyping();
-    const response = await darvishiAgent.generate(prompt);
+    const response = await darvishiAgent.generate(prompt, {
+      memory: {
+        resource: message.author.id,
+        thread: message.channelId,
+      },
+    });
     await message.reply(response.text || 'No response.');
   } catch (err) {
     await message.reply('Error: ' + (err instanceof Error ? err.message : String(err)));
