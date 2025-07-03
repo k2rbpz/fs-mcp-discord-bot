@@ -44,9 +44,22 @@ You'll need to provide API keys for the Flipside MCP server and Discord.
     ```bash
     cp .env.example .env
     ```
-2.  Open the `.env` file and add your keys. You can get a `DISCORD_BOT_TOKEN` from the Discord Developer Portal.
+2.  Open the `.env` file and add your keys. You will need a `DISCORD_BOT_TOKEN` from the Discord Developer Portal and a `FLIPSIDE_API_KEY` from Flipside Crypto.
+    Your `.env` file should look like this:
+    ```.env
+    DISCORD_TOKEN="your_discord_token_here"
+    FLIPSIDE_API_KEY="your_flipside_api_key_here"
+    ```
 
-## Running the Bot
+### 5. Start the Bot
+
+This command runs the built application from the .mastra/output directory.
+
+```bash
+pnpm run start
+```
+
+## Running the Discord Bot (backup)
 
 To run the bot in a development environment using `tsx` for on-the-fly TypeScript execution, use the following command:
 
