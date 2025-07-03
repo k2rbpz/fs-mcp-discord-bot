@@ -60,13 +60,17 @@ client.on(Events.MessageCreate, async message => {
     // Discord has a 2000 character limit per message.
     // Split the response into chunks if it's too long.
     if (fullResponse) {
-      for (let i = 0; i < fullResponse.length; i += 2000) {
+      // Reply with the first chunk to establish context.
+      await message.reply(fullResponse.substring(0, 2000));
+
+      // Send any subsequent chunks as regular messages.
+      for (let i = 2000; i < fullResponse.length; i += 2000) {
         await message.channel.send(fullResponse.substring(i, i + 2000));
       }
     }
   } catch (error) {
     console.error('Error processing message:', error);
-    await message.channel.send('Sorry, I ran into an error. Please try again.');
+    await message.reply('Sorry, I ran into an error. Please try again.');
   }
 });
 
