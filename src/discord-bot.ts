@@ -31,7 +31,7 @@ client.on(Events.MessageCreate, async message => {
     const response = await darvishiAgent.generate(prompt, {
       memory: {
         resource: message.author.id,
-        thread: message.channelId,
+        thread: `${message.channelId}-${message.author.id}`,
       },
     });
     await message.reply(response.text || 'No response.');

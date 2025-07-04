@@ -47,7 +47,7 @@ client.on(Events.MessageCreate, async message => {
       // This scopes the conversation memory to a specific user within a specific channel.
       memory: {
         resource: message.author.id,
-        thread: message.channelId,
+        thread: `${message.channelId}-${message.author.id}`,
       },
     });
 
