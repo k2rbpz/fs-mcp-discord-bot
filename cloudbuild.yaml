@@ -1,10 +1,22 @@
 steps:
+- name: 'bash'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    VERSION=$(cat package.json | jq -r .version)
+    echo "Setting _APP_VERSION to $VERSION"
+    echo "_APP_VERSION=$VERSION" > /workspace/build.env
+  id: GetVersion
+  env:
+  - 'BUILD_ENV_FILE=/workspace/build.env'
+
 - name: 'gcr.io/cloud-builders/docker'
   args: [
     'build',
     '-t', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA',
     '-t', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest',
-    '-t', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$(cat package.json | jq -r .version)',
+    '-t', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$_APP_VERSION',
     '.'
   ]
   id: Build
@@ -18,13 +30,13 @@ steps:
   id: PushLatest
 
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['push', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$(cat package.json | jq -r .version)']
+  args: ['push', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$_APP_VERSION']
   id: PushVersion
 
 images:
 - 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
-- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest'
-- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$(cat package.json | jq -r .version)'
+- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest
+- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$_APP_VERSION'
 
 options:
   logging: CLOUD_LOGGING_ONLY
