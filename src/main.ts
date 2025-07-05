@@ -37,28 +37,53 @@ client.on(Events.MessageCreate, async message => {
   // Only respond if the bot is mentioned
   if (!message.mentions.has(client.user.id)) return;
 
+  let typingInterval: NodeJS.Timeout | undefined;
   try {
+    // Start a typing indicator that will run for the duration of the agent's work.
+    // We call it once immediately, then set an interval to repeat it.
     await message.channel.sendTyping();
+    typingInterval = setInterval(() => {
+      message.channel.sendTyping();
+    }, 9000); // Discord's typing indicator lasts for 10 seconds.
 
     const userPrompt = message.content.replace(/<@!?\\d+>/, '').trim();
 
+    const responseBlocks: string[] = [];
     const responseStream = await darvishiAgent.stream(userPrompt, {
-      // Use the `memory` option to provide both a resource and thread identifier.
-      // This scopes the conversation memory to a specific user within a specific channel.
       memory: {
         resource: message.author.id,
         thread: `${message.channelId}-${message.author.id}`,
       },
+      onStepFinish: async stepResult => {
+        // A step can have both text and tool calls.
+        // We add the text first, then the tool call announcement.
+
+        // The `text` property on `stepResult` contains the full text generated in that step.
+        if (stepResult.text) {
+          responseBlocks.push(stepResult.text.trim());
+        }
+
+        // Check if the agent decided to use a tool in this step.
+        if (stepResult.toolCalls && stepResult.toolCalls.length > 0) {
+          const toolNames = stepResult.toolCalls.map(tc => `\`${tc.toolName}\``).join(', ');
+          responseBlocks.push(`> *Checking the system: ${toolNames}...*`);
+        }
+      },
     });
 
-    // Accumulate the response chunks into a single string.
-    let fullResponse = '';
-    for await (const chunk of responseStream.textStream) {
-      fullResponse += chunk;
+    // We must consume the stream for the process to complete and for `onStepFinish` to be called.
+    // We can simply iterate through the text stream without accumulating the chunks,
+    // as we are building our response from the step results.
+    for await (const _ of responseStream.textStream) {
+      // Consuming the stream...
     }
 
-    // Discord has a 2000 character limit per message.
-    // Split the response into chunks if it's too long.
+    // Stop the typing indicator once we have the full response.
+    clearInterval(typingInterval);
+
+    // Join the text from each step with a double newline to create an empty line between them.
+    const fullResponse = responseBlocks.join('\n\n');
+
     if (fullResponse) {
       // Reply with the first chunk to establish context.
       await message.reply(fullResponse.substring(0, 2000));
@@ -67,10 +92,17 @@ client.on(Events.MessageCreate, async message => {
       for (let i = 2000; i < fullResponse.length; i += 2000) {
         await message.channel.send(fullResponse.substring(i, i + 2000));
       }
+    } else {
+      await message.reply("Darvishi seems to have nothing to say about that.");
     }
   } catch (error) {
     logger.error('Error processing message:', error);
     await message.reply('Sorry, I ran into an error. Please try again.');
+  } finally {
+    // Ensure the typing indicator is always stopped.
+    if (typingInterval) {
+      clearInterval(typingInterval);
+    }
   }
 });
 
