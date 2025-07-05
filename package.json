@@ -1,0 +1,36 @@
+{
+  "name": "fs-mcp-discord-mastra2",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "mastra dev",
+    "build": "mastra build",
+    "start": "mastra start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "^1.2.22",
+    "@mastra/core": "^0.10.10",
+    "@mastra/libsql": "^0.11.0",
+    "@mastra/loggers": "^0.10.3",
+    "@mastra/mcp": "^0.10.5",
+    "@mastra/memory": "^0.11.1",
+    "discord.js": "^14.21.0",
+    "dotenv": "^17.0.1",
+    "zod": "^3.25.71"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "mastra": "^0.10.10",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
