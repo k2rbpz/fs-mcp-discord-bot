@@ -75,6 +75,21 @@ steps:
     - 'restart'
     - 'docker'
 
+# Step 4.6: Configure Docker to use gcr credential helper
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: ConfigureDockerCredentials
+  args:
+    - 'compute'
+    - 'ssh'
+    - '${_VM_NAME}'
+    - '--zone=${_VM_ZONE}'
+    - '--project=${PROJECT_ID}'
+    - '--'
+    - 'gcloud'
+    - 'auth'
+    - 'configure-docker'
+    - 'us-docker.pkg.dev'
+
 # Step 5: Execute the deployment script on the VM
 - name: 'gcr.io/cloud-builders/gcloud'
   id: ExecuteDeployment
