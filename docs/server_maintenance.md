@@ -66,15 +66,11 @@ docker start discord-bot
 To deploy a new version of your Discord bot (after making code changes):
 
 ### 5.1 On your Local Machine:
-1.  **Rebuild the Docker image** (ensure you're in your project's root directory):
+1.  **Build and tag the Docker image** for Google Container Registry (ensure you're in your project's root directory):
     ```bash
-    docker build --platform linux/amd64 -t fs-mcp-discord-mastra2 .
+    docker build --platform linux/amd64 -t gcr.io/pine-vision-sql-studio/fs-mcp-discord-mastra2 .
     ```
-2.  **Retag the image** for Google Container Registry:
-    ```bash
-    docker tag fs-mcp-discord-mastra2 gcr.io/pine-vision-sql-studio/fs-mcp-discord-mastra2
-    ```
-3.  **Repush the updated image** to GCR:
+2.  **Push the updated image** to GCR:
     ```bash
     docker push gcr.io/pine-vision-sql-studio/fs-mcp-discord-mastra2
     ```
