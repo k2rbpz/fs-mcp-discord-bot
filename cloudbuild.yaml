@@ -54,6 +54,27 @@ steps:
     - '--zone=${_VM_ZONE}'
     - '--project=${PROJECT_ID}'
 
+# Step 4.5: Grant Docker permissions to the user and restart Docker
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: GrantDockerPermissions
+  args:
+    - 'compute'
+    - 'ssh'
+    - '${_VM_NAME}'
+    - '--zone=${_VM_ZONE}'
+    - '--project=${PROJECT_ID}'
+    - '--'
+    - 'sudo'
+    - 'usermod'
+    - '-aG'
+    - 'docker'
+    - '$(whoami)'
+    - '&&'
+    - 'sudo'
+    - 'systemctl'
+    - 'restart'
+    - 'docker'
+
 # Step 5: Execute the deployment script on the VM
 - name: 'gcr.io/cloud-builders/gcloud'
   id: ExecuteDeployment
