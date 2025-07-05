@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { Client, GatewayIntentBits, Events, Partials } from 'discord.js';
-import { mastra } from './mastra';
+import { mastra, logger } from './mastra';
 
 // Get the Darvishi agent from the Mastra instance
 const darvishiAgent = mastra.getAgent('darvishiAgent');
@@ -26,7 +26,7 @@ if (!token) {
 
 // When the client is ready, run this code (only once)
 client.once(Events.ClientReady, readyClient => {
-  console.log(`Discord bot is ready! Logged in as ${readyClient.user.tag}`);
+  logger.info(`Discord bot is ready! Logged in as ${readyClient.user.tag}`);
 });
 
 // Listen for when a message is created
@@ -69,7 +69,7 @@ client.on(Events.MessageCreate, async message => {
       }
     }
   } catch (error) {
-    console.error('Error processing message:', error);
+    logger.error('Error processing message:', error);
     await message.reply('Sorry, I ran into an error. Please try again.');
   }
 });
