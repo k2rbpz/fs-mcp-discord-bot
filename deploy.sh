@@ -18,4 +18,7 @@ docker run -d --restart=always --name discord-bot \
   --env-file "${ENV_FILE_PATH}" \
   "${IMAGE_URL}"
 
+echo "--- Cleaning up old Docker images..."
+docker image prune -af
+
 echo "--- Deployment to GCE complete."

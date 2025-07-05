@@ -1,3 +1,8 @@
+substitutions:
+  _VM_NAME: discord-bot-vm
+  _VM_ZONE: us-central1-a
+  _ENV_FILE_PATH: /home/marqu/fs-mcp-discord-mastra2.env
+
 steps:
 # Step 1: Get the version from package.json and write it to a file.
 # The /workspace directory is shared between all build steps.
@@ -21,9 +26,9 @@ steps:
   - |
     VERSION=$$(cat /workspace/version.txt)
     docker build \
-      -t us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA \
-      -t us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest \
-      -t us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$$VERSION \
+      -t us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA \
+      -t us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:latest \
+      -t us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:$$VERSION \
       .
 
 # Step 3: Push all the images in a single, efficient step.
@@ -34,9 +39,9 @@ steps:
   - '-c'
   - |
     VERSION=$$(cat /workspace/version.txt)
-    docker push us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA
-    docker push us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest
-    docker push us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$$VERSION
+    docker push us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA
+    docker push us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:latest
+    docker push us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:$$VERSION
 
 # Step 4: Copy deployment script to the VM
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -45,9 +50,9 @@ steps:
     - 'compute'
     - 'scp'
     - './deploy.sh'
-    - 'discord-bot-vm:/tmp/deploy.sh'
-    - '--zone=us-central1-a'
-    - '--project=pine-vision-sql-studio'
+    - '${_VM_NAME}:/tmp/deploy.sh'
+    - '--zone=${_VM_ZONE}'
+    - '--project=${PROJECT_ID}'
 
 # Step 5: Execute the deployment script on the VM
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -55,18 +60,18 @@ steps:
   args:
     - 'compute'
     - 'ssh'
-    - 'discord-bot-vm'
-    - '--zone=us-central1-a'
-    - '--project=pine-vision-sql-studio'
+    - '${_VM_NAME}'
+    - '--zone=${_VM_ZONE}'
+    - '--project=${PROJECT_ID}'
     - '--'
     - 'bash'
     - '/tmp/deploy.sh'
-    - 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
-    - '/home/marqu/fs-mcp-discord-mastra2.env'
+    - 'us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
+    - '${_ENV_FILE_PATH}'
 
 images:
-- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
-- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest'
+- 'us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
+- 'us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
