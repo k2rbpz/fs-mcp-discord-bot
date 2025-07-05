@@ -35,7 +35,7 @@ steps:
 
 images:
 - 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
-- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest
+- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest'
 - 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$_APP_VERSION'
 
 options:
