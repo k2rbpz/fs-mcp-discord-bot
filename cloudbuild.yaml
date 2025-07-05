@@ -7,7 +7,7 @@ steps:
     VERSION=$(cat package.json | jq -r .version)
     docker build -t us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA \
                  -t us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest \
-                 -t us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$VERSION \
+                 -t us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$$VERSION \
                  .
   id: BuildAndTag
 
