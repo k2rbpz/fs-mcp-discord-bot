@@ -9,7 +9,7 @@ import { darvishiInstructions } from './darvishi-instructions';
 export const darvishiAgent = new Agent({
   name: 'Darvishi',
   // You can easily switch between personas here, e.g., darvishiInstructions.kebabShop
-  instructions: darvishiInstructions.officeTired,
+  instructions: darvishiInstructions.archivistOfTheEther,
   model: google('gemini-2.5-flash'),
   tools: { weatherTool, ...await mcp.getTools() }, // Include local and external tools
   memory: new Memory({
