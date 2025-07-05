@@ -70,7 +70,9 @@ steps:
     - 'access'
     - 'latest'
     - '--secret=my-discord-bot-env'
-    - '>'
+    - '|'
+    - 'sudo'
+    - 'tee'
     - '${_ENV_FILE_PATH}'
 
 # Step 4.5: Grant Docker permissions to the user and restart Docker
