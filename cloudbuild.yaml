@@ -1,0 +1,27 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'build',
+    '-t', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA',
+    '-t', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest',
+    '-t', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$(cat package.json | jq -r .version)',
+    '.'
+  ]
+  id: Build
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA']
+  id: PushCommitSha
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest']
+  id: PushLatest
+
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$(cat package.json | jq -r .version)']
+  id: PushVersion
+
+images:
+- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
+- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest'
+- 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$(cat package.json | jq -r .version)'
