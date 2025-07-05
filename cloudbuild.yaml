@@ -38,35 +38,31 @@ steps:
     docker push us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:latest
     docker push us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$$VERSION
 
-# Step 4: Deploy to GCE by restarting the container with the new image.
-# This step assumes an environment file already exists on the VM.
+# Step 4: Copy deployment script to the VM
 - name: 'gcr.io/cloud-builders/gcloud'
-  id: DeployToVM
-  entrypoint: 'bash'
+  id: CopyScript
   args:
-  - '-c'
-  - |
-    # IMPORTANT: Replace '/path/to/your/fs-mcp-discord-mastra2.env'
-    # with the actual, absolute path to your environment file on the VM.
-    # Also, ensure the zone (us-central1-a) matches your VM's zone.
-    gcloud compute ssh discord-bot-vm \
-      --project="pine-vision-sql-studio" \
-      --zone="us-central1-a" \
-      --command=" \
-        set -e; \
-        IMAGE_URL=us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA; \
-        ENV_FILE_PATH=/home/marqu/fs-mcp-discord-mastra2.env; \
-        echo '--- Pulling new image: $$IMAGE_URL'; \
-        docker pull $$IMAGE_URL; \
-        echo '--- Stopping and removing old container...'; \
-        docker stop discord-bot || true; \
-        docker rm discord-bot || true; \
-        echo '--- Starting new container using environment file at $$ENV_FILE_PATH...'; \
-        docker run -d --restart=always --name discord-bot \
-          --env-file $$ENV_FILE_PATH \
-          $$IMAGE_URL; \
-        echo '--- Deployment to GCE complete.'; \
-      "
+    - 'compute'
+    - 'scp'
+    - './deploy.sh'
+    - 'discord-bot-vm:/tmp/deploy.sh'
+    - '--zone=us-central1-a'
+    - '--project=pine-vision-sql-studio'
+
+# Step 5: Execute the deployment script on the VM
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: ExecuteDeployment
+  args:
+    - 'compute'
+    - 'ssh'
+    - 'discord-bot-vm'
+    - '--zone=us-central1-a'
+    - '--project=pine-vision-sql-studio'
+    - '--'
+    - 'bash'
+    - '/tmp/deploy.sh'
+    - 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
+    - '/home/marqu/fs-mcp-discord-mastra2.env'
 
 images:
 - 'us-docker.pkg.dev/pine-vision-sql-studio/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
