@@ -54,6 +54,17 @@ steps:
     - '--zone=${_VM_ZONE}'
     - '--project=${PROJECT_ID}'
 
+# Step 4.1: Copy environment file to the VM
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: CopyEnvFile
+  args:
+    - 'compute'
+    - 'scp'
+    - '.env'
+    - '${_VM_NAME}:${_ENV_FILE_PATH}'
+    - '--zone=${_VM_ZONE}'
+    - '--project=${PROJECT_ID}'
+
 # Step 4.5: Grant Docker permissions to the user and restart Docker
 - name: 'gcr.io/cloud-builders/gcloud'
   id: GrantDockerPermissions
