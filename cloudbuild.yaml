@@ -54,16 +54,24 @@ steps:
     - '--zone=${_VM_ZONE}'
     - '--project=${PROJECT_ID}'
 
-# Step 4.1: Copy environment file to the VM
+# Step 4.1: Fetch .env from Secret Manager and write to VM
 - name: 'gcr.io/cloud-builders/gcloud'
-  id: CopyEnvFile
+  id: FetchEnvFromSecretManager
   args:
     - 'compute'
-    - 'scp'
-    - '.env'
-    - '${_VM_NAME}:${_ENV_FILE_PATH}'
+    - 'ssh'
+    - '${_VM_NAME}'
     - '--zone=${_VM_ZONE}'
     - '--project=${PROJECT_ID}'
+    - '--'
+    - 'gcloud'
+    - 'secrets'
+    - 'versions'
+    - 'access'
+    - 'latest'
+    - '--secret=my-discord-bot-env'
+    - '>'
+    - '${_ENV_FILE_PATH}'
 
 # Step 4.5: Grant Docker permissions to the user and restart Docker
 - name: 'gcr.io/cloud-builders/gcloud'
