@@ -7,7 +7,7 @@
     "dev": "mastra dev",
     "build": "mastra build",
     "discord-bot": "tsx src/main.ts",
-    "start": "concurrently --raw --kill-others-on-fail \"pnpm run discord-bot\" \"pnpm run dev\""
+    "start": "tsx src/main.ts"
   },
   "keywords": [],
   "author": "",
