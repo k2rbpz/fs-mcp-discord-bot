@@ -46,7 +46,11 @@ client.on(Events.MessageCreate, async message => {
       message.channel.sendTyping();
     }, 9000); // Discord's typing indicator lasts for 10 seconds.
 
-    const userPrompt = message.content.replace(/<@!?\d+>/g, '').trim();
+    const rawUserPrompt = message.content.replace(/<@!?\d+>/g, '').trim();
+    const currentDate = new Date().toUTCString();
+
+    // Prepend the current date to the user's prompt to give the agent context.
+    const userPrompt = `(The current date is: ${currentDate})\n\n${rawUserPrompt}`;
 
     const responseBlocks: string[] = [];
     const responseStream = await darvishiAgent.stream(userPrompt, {
