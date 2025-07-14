@@ -47,16 +47,17 @@ client.on(Events.MessageCreate, async message => {
     }, 9000); // Discord's typing indicator lasts for 10 seconds.
 
     const rawUserPrompt = message.content.replace(/<@!?\d+>/g, '').trim();
-    const currentDate = new Date().toUTCString();
+    const userTag = message.author.tag;
+    const currentDate = new Date().toUTCString(); // The agent's persona is instructed to use this.
 
-    // Prepend the current date to the user's prompt to give the agent context.
-    const userPrompt = `(The current date is: ${currentDate})\n\n${rawUserPrompt}`;
+    // Prepend the user's tag and current date to the prompt to give the agent context.
+    const userPrompt = `(User: ${userTag}, Current Date: ${currentDate})\n\n${rawUserPrompt}`;
 
     const responseBlocks: string[] = [];
     const responseStream = await darvishiAgent.stream(userPrompt, {
       memory: {
-        resource: message.author.id,
-        thread: `${message.channelId}-${message.author.id}`,
+        // Use the channel ID as the resource to create a shared memory for the entire channel.
+        resource: message.channelId,
       },
       onStepFinish: async stepResult => {
         // A step can have both text and tool calls.
