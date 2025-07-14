@@ -126,6 +126,28 @@ steps:
     - 'us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
     - '${_ENV_FILE_PATH}'
 
+# Step 6: Clean up old images in Artifact Registry
+- name: 'gcr.io/cloud-builders/gcloud'
+  id: CleanupRegistry
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    set -e
+    IMAGE_PATH="us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2"
+    # Find image digests to delete: not tagged 'latest' and older than 30 days.
+    IMAGES_TO_DELETE=$$(gcloud artifacts docker images list $$IMAGE_PATH \
+      --filter="NOT tags:latest AND create_time < '$$(date -d '30 days ago' -Iseconds)'" \
+      --format="get(digest)" \
+      --quiet)
+
+    if [ -z "$$IMAGES_TO_DELETE" ]; then
+      echo "No old images to delete."
+    else
+      echo "The following image digests will be deleted:"
+      echo "$$IMAGES_TO_DELETE" | xargs -r -I {} gcloud artifacts docker images delete "$$IMAGE_PATH@{}" --delete-orphans --quiet
+    fi
+
 images:
 - 'us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:$COMMIT_SHA'
 - 'us-docker.pkg.dev/${PROJECT_ID}/gcr.io/fs-mcp-discord-mastra2:latest'
