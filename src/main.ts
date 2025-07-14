@@ -65,6 +65,8 @@ client.on(Events.MessageCreate, async message => {
         memory: {
           // Use the channel ID as the resource to create a shared memory for the entire channel.
           resource: message.channelId,
+          // Use the channel ID as the thread ID to maintain a single conversation per channel.
+          thread: message.channelId,
         },
         onStepFinish: async stepResult => {
           // A step can have both text and tool calls.
@@ -94,7 +96,7 @@ client.on(Events.MessageCreate, async message => {
       const fullResponse = responseBlocks.join('\n\n');
 
       if (fullResponse) {
-        if (full_response.length <= 2000) {
+        if (fullResponse.length <= 2000) {
           await message.reply(fullResponse);
         } else {
           // Response is too long, send in chunks based on logical blocks.
