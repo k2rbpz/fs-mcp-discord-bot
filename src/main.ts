@@ -46,7 +46,7 @@ client.on(Events.MessageCreate, async message => {
       message.channel.sendTyping();
     }, 9000); // Discord's typing indicator lasts for 10 seconds.
 
-    const userPrompt = message.content.replace(/<@!?\\d+>/, '').trim();
+    const userPrompt = message.content.replace(/<@!?\d+>/g, '').trim();
 
     const responseBlocks: string[] = [];
     const responseStream = await darvishiAgent.stream(userPrompt, {
@@ -78,19 +78,50 @@ client.on(Events.MessageCreate, async message => {
       // Consuming the stream...
     }
 
-    // Stop the typing indicator once we have the full response.
-    clearInterval(typingInterval);
-
     // Join the text from each step with a double newline to create an empty line between them.
     const fullResponse = responseBlocks.join('\n\n');
 
     if (fullResponse) {
-      // Reply with the first chunk to establish context.
-      await message.reply(fullResponse.substring(0, 2000));
+      if (fullResponse.length <= 2000) {
+        await message.reply(fullResponse);
+      } else {
+        // Response is too long, send in chunks based on logical blocks.
+        const messagesToSend: string[] = [];
+        let currentMessage = '';
 
-      // Send any subsequent chunks as regular messages.
-      for (let i = 2000; i < fullResponse.length; i += 2000) {
-        await message.channel.send(fullResponse.substring(i, i + 2000));
+        for (const block of responseBlocks) {
+          // If a single block is longer than the limit, it must be chunked.
+          if (block.length > 2000) {
+            if (currentMessage.length > 0) {
+              messagesToSend.push(currentMessage);
+              currentMessage = '';
+            }
+            for (let i = 0; i < block.length; i += 2000) {
+              messagesToSend.push(block.substring(i, i + 2000));
+            }
+            continue;
+          }
+
+          const separator = currentMessage.length > 0 ? '\n\n' : '';
+          if (currentMessage.length + separator.length + block.length > 2000) {
+            messagesToSend.push(currentMessage);
+            currentMessage = block;
+          } else {
+            currentMessage += separator + block;
+          }
+        }
+
+        if (currentMessage.length > 0) {
+          messagesToSend.push(currentMessage);
+        }
+
+        // Send the messages
+        if (messagesToSend.length > 0) {
+          await message.reply(messagesToSend[0]);
+          for (let i = 1; i < messagesToSend.length; i++) {
+            await message.channel.send(messagesToSend[i]);
+          }
+        }
       }
     } else {
       await message.reply("Darvishi seems to have nothing to say about that.");
