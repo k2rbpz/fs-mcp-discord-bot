@@ -19,12 +19,19 @@ export class RequestQueue {
     // If no task exists, start with an already-resolved promise.
     const lastTask = this.queues.get(channelId) || Promise.resolve();
 
-    // Create a new promise that waits for the last task to finish,
-    // then executes the new task.
+    // Create a new promise that waits for the last task to finish, then executes the new task.
     const currentTask = lastTask.then(task);
 
     // Store the new promise as the last task for this channel.
     this.queues.set(channelId, currentTask);
+
+    // After the task is done, if no other task has been added for this channel
+    // in the meantime, clean up the queue to prevent memory leaks from inactive channels.
+    currentTask.finally(() => {
+      if (this.queues.get(channelId) === currentTask) {
+        this.queues.delete(channelId);
+      }
+    });
 
     return currentTask;
   }
