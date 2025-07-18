@@ -36,10 +36,22 @@ export const mcpCoinGecko = new MCPClient({
   },
 });
 
+// Create a client to connect to the bot's own local MCP server.
+// This enables agents to use other agents as tools.
+const mcpPort = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 4000;
+export const mcpLocalAgents = new MCPClient({
+  servers: {
+    local_agents: {
+      url: new URL(`http://localhost:${mcpPort}/sse`),
+    },
+  },
+});
+
 // Disconnect the MCPClient when the application exits
 process.on('beforeExit', async () => {
   await Promise.all([
     mcpFlipside.disconnect(),
     mcpCoinGecko.disconnect(),
+    mcpLocalAgents.disconnect(),
   ]);
 });

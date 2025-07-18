@@ -3,12 +3,12 @@ import { Agent } from '@mastra/core/agent';
 import { Tool } from '@mastra/core/tool';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
-import { mcpCoinGecko } from '../mcp-client';
+import { mcpCoinGecko, mcpLocalAgents } from '../mcp-client';
 import { lyraInstructions } from './lyra-instructions';
 
 let cachedTools: Record<string, Tool> | undefined;
 let lastUpdated: number = 0;
-const cacheDuration: number = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const cacheDuration: number = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
 
 /**
  * Fetches tools from the MCP server and updates the cache.
@@ -42,8 +42,19 @@ export const lyraAgent = new Agent({
   instructions: lyraInstructions.archivistOfTheEther,
   model: google('gemini-2.5-flash'),
   async tools() {
+    // Ensure the cache for CoinGecko tools is up-to-date.
     await ensureCacheValidity();
-    return cachedTools || {}; // Return an empty object if caching fails
+
+    // Fetch tools from the local agent server.
+    let localAgentTools: Record<string, Tool> = {};
+    try {
+      localAgentTools = await mcpLocalAgents.getTools();
+    } catch (error) {
+      console.error('Failed to load tools from local agent MCP server.', error);
+    }
+
+    // Combine tools from all sources.
+    return { ...(cachedTools || {}), ...localAgentTools };
   },
   memory: new Memory({
     storage: new LibSQLStore({

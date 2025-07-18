@@ -1,7 +1,10 @@
 import 'dotenv/config';
 import { Client, GatewayIntentBits, Events, Partials } from 'discord.js';
+import { createServer } from 'http';
 import { RequestQueue } from './request-queue';
 import { mastra, logger } from './mastra';
+import { mcpServer } from './mastra/mcp-server';
+
 
 // Get the Darvishi agent from the Mastra instance
 const darvishiAgent = mastra.getAgent('darvishiAgent');
@@ -309,6 +312,40 @@ lyraClient.on(Events.MessageCreate, async message => {
       }
     }
   });
+});
+
+// Start the MCP Server to expose agents as tools
+const mcpPort = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 4000;
+
+// Create an HTTP server to handle requests for the MCP server.
+const httpServer = createServer(async (req, res) => {
+  try {
+    // For each request, delegate to the MCPServer's startSSE method.
+    await mcpServer.startSSE({
+      // Construct the full URL from the request.
+      url: new URL(req.url || '', `http://${req.headers.host || `localhost:${mcpPort}`}`),
+      // Define the paths for SSE and messaging.
+      ssePath: '/sse',
+      messagePath: '/message',
+      req,
+      res,
+    });
+  } catch (error) {
+    logger.error('Error handling MCP request:', error);
+    if (!res.headersSent) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Internal Server Error' }));
+    }
+  }
+});
+
+httpServer.listen(mcpPort, () => {
+  logger.info(`MCP Server running and exposing agents as tools on http://localhost:${mcpPort}/sse`);
+});
+
+httpServer.on('error', (error) => {
+  logger.error('Failed to start MCP Server:', error);
+  process.exit(1);
 });
 
 // Log in to Discord with your client's token
