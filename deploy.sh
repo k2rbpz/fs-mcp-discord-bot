@@ -18,6 +18,7 @@ docker run -d --restart=always --name discord-bot \
   --log-driver="json-file" \
   --log-opt max-size=10m \
   --log-opt max-file=3 \
+  -p 4000:4000 \
   --env-file "${ENV_FILE_PATH}" \
   "${IMAGE_URL}"
 
