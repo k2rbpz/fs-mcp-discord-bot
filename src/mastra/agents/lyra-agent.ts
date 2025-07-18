@@ -2,7 +2,7 @@ import { google } from '@ai-sdk/google';
 import { Agent } from '@mastra/core/agent';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
-import { mcp, mcpCoinGecko } from '../mcp-client';
+import { mcpCoinGecko } from '../mcp-client';
 import { lyraInstructions } from './lyra-instructions';
 
 export const lyraAgent = new Agent({
