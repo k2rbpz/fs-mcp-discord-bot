@@ -11,7 +11,17 @@ export const darvishiAgent = new Agent({
   // You can easily switch between personas here, e.g., darvishiInstructions.kebabShop
   instructions: darvishiInstructions.archivistOfTheEther,
   model: google('gemini-2.5-flash'),
-  tools: { weatherTool, ...await mcpFlipside.getTools() }, // Include local and external tools
+  tools: {
+    weatherTool,
+    ...(await (async () => {
+      try {
+        return await mcpFlipside.getTools();
+      } catch (error) {
+        console.error('Failed to load tools from mcpFlipside:', error);
+        return {}; // Return an empty object if tools cannot be loaded
+      }
+    })()),
+  }, // Include local and external tools
   memory: new Memory({
     storage: new LibSQLStore({
       url: 'file:../mastra.db', // path is relative to the .mastra/output directory

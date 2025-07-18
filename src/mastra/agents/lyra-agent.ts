@@ -10,7 +10,16 @@ export const lyraAgent = new Agent({
   // You can easily switch between personas here, e.g., lyraInstructions.kebabShop
   instructions: lyraInstructions.archivistOfTheEther,
   model: google('gemini-2.5-flash'),
-  tools: { ...await mcpCoinGecko.getTools() }, // Include local and external tools
+  tools: {
+    ...(await (async () => {
+      try {
+        return await mcpCoinGecko.getTools();
+      } catch (error) {
+        console.error('Failed to load tools from mcpCoinGecko:', error);
+        return {}; // Return an empty object if tools cannot be loaded
+      }
+    })()),
+  }, // Include local and external tools
   memory: new Memory({
     storage: new LibSQLStore({
       url: 'file:../mastra.db', // path is relative to the .mastra/output directory
