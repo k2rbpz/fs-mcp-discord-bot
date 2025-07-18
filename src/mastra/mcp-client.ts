@@ -38,9 +38,8 @@ export const mcpCoinGecko = new MCPClient({
 
 // Disconnect the MCPClient when the application exits
 process.on('beforeExit', async () => {
-  await mcpFlipside.disconnect();
-});
-
-process.on('beforeExit', async () => {
-  await mcpCoinGecko.disconnect();
+  await Promise.all([
+    mcpFlipside.disconnect(),
+    mcpCoinGecko.disconnect(),
+  ]);
 });

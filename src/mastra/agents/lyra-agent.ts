@@ -1,26 +1,50 @@
 import { google } from '@ai-sdk/google';
 import { Agent } from '@mastra/core/agent';
+import { Tool } from '@mastra/core/tool';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
 import { mcpCoinGecko } from '../mcp-client';
 import { lyraInstructions } from './lyra-instructions';
 
+let cachedTools: Record<string, Tool> | undefined;
+let lastUpdated: number = 0;
+const cacheDuration: number = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+
+/**
+ * Fetches tools from the MCP server and updates the cache.
+ */
+async function updateToolsCache() {
+  try {
+    cachedTools = await mcpCoinGecko.getTools();
+    lastUpdated = Date.now();
+    console.log('Successfully updated cached tools from mcpCoinGecko.');
+  } catch (error) {
+    console.error('Failed to update tools from mcpCoinGecko.', error);
+    // You might want to handle errors more specifically, e.g., retry, use a fallback, etc.
+  }
+}
+
+/**
+ * Checks if the cache is valid and updates it if necessary.
+ */
+async function ensureCacheValidity() {
+  if (!cachedTools || Date.now() - lastUpdated > cacheDuration) {
+    console.log('Tool cache is stale or empty. Updating...');
+    await updateToolsCache();
+  } else {
+    console.log('Using cached tools.');
+  }
+}
+
 export const lyraAgent = new Agent({
   name: 'Lyra',
   description: 'Retrieves cryptocurrency token facts and market data, such as prices and trading volume, via the CoinGecko MCP server.',
-  // You can easily switch between personas here, e.g., lyraInstructions.kebabShop
   instructions: lyraInstructions.archivistOfTheEther,
   model: google('gemini-2.5-flash'),
-  tools: {
-    ...(await (async () => {
-      try {
-        return await mcpCoinGecko.getTools();
-      } catch (error) {
-        console.error('Failed to load tools from mcpCoinGecko:', error);
-        return {}; // Return an empty object if tools cannot be loaded
-      }
-    })()),
-  }, // Include local and external tools
+  async tools() {
+    await ensureCacheValidity();
+    return cachedTools || {}; // Return an empty object if caching fails
+  },
   memory: new Memory({
     storage: new LibSQLStore({
       url: 'file:../mastra.db', // path is relative to the .mastra/output directory
