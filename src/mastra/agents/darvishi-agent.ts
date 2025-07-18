@@ -8,6 +8,7 @@ import { darvishiInstructions } from './darvishi-instructions';
 
 export const darvishiAgent = new Agent({
   name: 'Darvishi',
+  description: 'Provides growth-focused crypto analytics, on-chain data, and user scores using the Flipside MCP server. Can also retrieve current weather information.',
   // You can easily switch between personas here, e.g., darvishiInstructions.kebabShop
   instructions: darvishiInstructions.archivistOfTheEther,
   model: google('gemini-2.5-flash'),

@@ -7,6 +7,7 @@ import { lyraInstructions } from './lyra-instructions';
 
 export const lyraAgent = new Agent({
   name: 'Lyra',
+  description: 'Retrieves cryptocurrency token facts and market data, such as prices and trading volume, via the CoinGecko MCP server.',
   // You can easily switch between personas here, e.g., lyraInstructions.kebabShop
   instructions: lyraInstructions.archivistOfTheEther,
   model: google('gemini-2.5-flash'),
