@@ -29,7 +29,8 @@ export const mcpCoinGecko = new MCPClient({
       command: "npx",
       args: [
         "mcp-remote",
-        "https://mcp.api.coingecko.com/sse"
+        "https://mcp.api.coingecko.com/sse",
+        "--tools=dynamic"
       ]
     }
   },
