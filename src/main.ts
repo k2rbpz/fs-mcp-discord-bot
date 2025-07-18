@@ -78,7 +78,8 @@ darvishiClient.on(Events.MessageCreate, async message => {
         message.channel.sendTyping();
       }, 9000); // Discord's typing indicator lasts for 10 seconds.
 
-      const rawUserPrompt = message.content.replace(/<@!?\d+>/g, '').trim();
+      const botMentionRegex = new RegExp(`<@!?${darvishiClient.user!.id}>`, 'g');
+      const rawUserPrompt = message.content.replace(botMentionRegex, '').trim();
       const userTag = message.author.tag;
       const currentDate = new Date().toUTCString(); // The agent's persona is instructed to use this.
 
@@ -196,7 +197,8 @@ lyraClient.on(Events.MessageCreate, async message => {
         message.channel.sendTyping();
       }, 9000); // Discord's typing indicator lasts for 10 seconds.
 
-      const rawUserPrompt = message.content.replace(/<@!?\d+>/g, '').trim();
+      const botMentionRegex = new RegExp(`<@!?${lyraClient.user!.id}>`, 'g');
+      const rawUserPrompt = message.content.replace(botMentionRegex, '').trim();
       const userTag = message.author.tag;
       const currentDate = new Date().toUTCString(); // The agent's persona is instructed to use this.
 
