@@ -25,16 +25,12 @@ export const mcpFlipside = new MCPClient({
 
 export const mcpCoinGecko = new MCPClient({
   servers: {
-    coingecko_mcp_local: {
+    coingecko_mcp: {
       command: "npx",
       args: [
-        "-y",
-        "@coingecko/coingecko-mcp"
-      ],
-      env: {
-        "COINGECKO_PRO_API_KEY": "YOUR_PRO_API_KEY",
-        "COINGECKO_ENVIRONMENT": "pro"
-      }
+        "mcp-remote",
+        "https://mcp.pro-api.coingecko.com/sse"
+      ]
     }
   },
 });
