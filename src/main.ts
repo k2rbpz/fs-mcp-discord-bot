@@ -60,9 +60,6 @@ const lyraRequestQueue = new RequestQueue();
 
 // Listen for when a message is created
 darvishiClient.on(Events.MessageCreate, async message => {
-  // Ignore messages from bots
-  if (message.author.bot) return;
-
   // Only respond if the bot is mentioned
   if (!message.mentions.has(darvishiClient.user.id)) return;
   
@@ -79,7 +76,17 @@ darvishiClient.on(Events.MessageCreate, async message => {
       }, 9000); // Discord's typing indicator lasts for 10 seconds.
 
       const botMentionRegex = new RegExp(`<@!?${darvishiClient.user!.id}>`, 'g');
-      const rawUserPrompt = message.content.replace(botMentionRegex, '').trim();
+      let processedPrompt = message.content.replace(botMentionRegex, '');
+
+      // Replace any remaining user mentions with their usernames for the agent's context.
+      message.mentions.users.forEach(user => {
+        if (user.id !== darvishiClient.user!.id) {
+          const otherMentionRegex = new RegExp(`<@!?${user.id}>`, 'g');
+          processedPrompt = processedPrompt.replace(otherMentionRegex, `@${user.username}`);
+        }
+      });
+
+      const rawUserPrompt = processedPrompt.trim();
       const userTag = message.author.tag;
       const currentDate = new Date().toUTCString(); // The agent's persona is instructed to use this.
 
@@ -179,9 +186,6 @@ darvishiClient.on(Events.MessageCreate, async message => {
 });
 
 lyraClient.on(Events.MessageCreate, async message => {
-  // Ignore messages from bots
-  if (message.author.bot) return;
-
   // Only respond if the bot is mentioned
   if (!message.mentions.has(lyraClient.user.id)) return;
   
@@ -198,7 +202,17 @@ lyraClient.on(Events.MessageCreate, async message => {
       }, 9000); // Discord's typing indicator lasts for 10 seconds.
 
       const botMentionRegex = new RegExp(`<@!?${lyraClient.user!.id}>`, 'g');
-      const rawUserPrompt = message.content.replace(botMentionRegex, '').trim();
+      let processedPrompt = message.content.replace(botMentionRegex, '');
+
+      // Replace any remaining user mentions with their usernames for the agent's context.
+      message.mentions.users.forEach(user => {
+        if (user.id !== lyraClient.user!.id) {
+          const otherMentionRegex = new RegExp(`<@!?${user.id}>`, 'g');
+          processedPrompt = processedPrompt.replace(otherMentionRegex, `@${user.username}`);
+        }
+      });
+
+      const rawUserPrompt = processedPrompt.trim();
       const userTag = message.author.tag;
       const currentDate = new Date().toUTCString(); // The agent's persona is instructed to use this.
 
