@@ -3,22 +3,47 @@ import { MCPClient } from '@mastra/mcp';
 
 // Retrieve the API key from environment variables
 const flipsideApiKey = process.env.FLIPSIDE_API_KEY;
+const coingeckoProApiKey = process.env.COINGECKO_PRO_API_KEY;
 
 if (!flipsideApiKey) {
   throw new Error('FLIPSIDE_API_KEY is not set in the environment variables.');
 }
 
+if (!coingeckoProApiKey) {
+  throw new Error('COINGECKO_PRO_API_KEY is not set in the environment variables.');
+}
+
 // Create MCPClient instance with the external server
-export const mcp = new MCPClient({
+export const mcpFlipside = new MCPClient({
   servers: {
     flipside: { // Name the external server
       url: new URL(`https://mcp.flipsidecrypto.xyz/beta/sse?apiKey=${flipsideApiKey}`),
       timeout: 300000, // 5 minutes
-    },
+    }
+  },
+});
+
+export const mcpCoinGecko = new MCPClient({
+  servers: {
+    coingecko_mcp_local: {
+      command: "npx",
+      args: [
+        "-y",
+        "@coingecko/coingecko-mcp"
+      ],
+      env: {
+        "COINGECKO_PRO_API_KEY": "YOUR_PRO_API_KEY",
+        "COINGECKO_ENVIRONMENT": "pro"
+      }
+    }
   },
 });
 
 // Disconnect the MCPClient when the application exits
 process.on('beforeExit', async () => {
-  await mcp.disconnect();
+  await mcpFlipside.disconnect();
+});
+
+process.on('beforeExit', async () => {
+  await mcpCoinGecko.disconnect();
 });
