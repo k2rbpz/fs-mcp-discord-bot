@@ -57,7 +57,15 @@ ${rawUserPrompt}`;
           onStepFinish: async stepResult => {
             if (stepResult.text) {
               responseBlocks.push(stepResult.text.trim());
-            }
+              // Check if the step involves a tool call (likely from a local agent)
+              if (stepResult.toolCalls && stepResult.toolCalls.some(toolCall => toolCall.toolName.startsWith('local_agents_'))) {
+                const lastResponse = responseBlocks.pop();
+                if (lastResponse) {
+                  const quotedResponse = lastResponse.replace(/^/gm, '> ');
+                  responseBlocks.push(quotedResponse);
+                }
+              }
+            }            
             if (stepResult.toolCalls && stepResult.toolCalls.length > 0) {
               const toolNames = stepResult.toolCalls.map(tc => `\`${tc.toolName}\``).join(', ');
               responseBlocks.push(`> *Checking the system: ${toolNames}...*`);
