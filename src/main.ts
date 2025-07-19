@@ -1,12 +1,10 @@
 import 'dotenv/config';
-import { Client, GatewayIntentBits, Events, Partials } from 'discord.js';
 import { createServer } from 'http';
-import { RequestQueue } from './request-queue';
 import { mastra, logger } from './mastra';
 import { mcpServer } from './mastra/mcp-server';
+import { setupDiscordBot } from './discord-bot';
 
-
-// Get the Darvishi agent from the Mastra instance
+// Get agents from the Mastra instance
 const darvishiAgent = mastra.getAgent('darvishiAgent');
 const lyraAgent = mastra.getAgent('lyraAgent');
 
@@ -18,25 +16,7 @@ if (!lyraAgent) {
   throw new Error('Lyra agent not found. Make sure it is defined in src/mastra/index.ts');
 }
 
-// Create a new Discord client instance
-const darvishiClient = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-  partials: [Partials.Channel],
-});
-
-const lyraClient = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-  partials: [Partials.Channel],
-});
-
+// Get Discord tokens from environment variables
 const darvishiToken = process.env.DISCORD_TOKEN_DARVISHI;
 const lyraToken = process.env.DISCORD_TOKEN_LYRA;
 
@@ -48,271 +28,9 @@ if (!lyraToken) {
   throw new Error('DISCORD_TOKEN_LYRA is not set in the .env file. Please copy .env.example to .env and add your token.');
 }
 
-// When the client is ready, run this code (only once)
-darvishiClient.once(Events.ClientReady, readyClient => {
-  logger.info(`Discord bot is ready! Logged in as ${readyClient.user.tag}`);
-});
-
-lyraClient.once(Events.ClientReady, readyClient => {
-  logger.info(`Discord bot is ready! Logged in as ${readyClient.user.tag}`);
-});
-
-// Create a queue to handle concurrent requests per channel
-const requestQueue = new RequestQueue();
-const lyraRequestQueue = new RequestQueue();
-
-// Listen for when a message is created
-darvishiClient.on(Events.MessageCreate, async message => {
-  // Only respond if the bot is mentioned
-  if (!message.mentions.has(darvishiClient.user.id)) return;
-  
-  // Add the message processing logic to the queue for this channel.
-  // This ensures that messages in the same channel are processed sequentially.
-  requestQueue.addToQueue(message.channelId, async () => {
-    let typingInterval: NodeJS.Timeout | undefined;
-    try {
-      // Start a typing indicator that will run for the duration of the agent's work.
-      // We call it once immediately, then set an interval to repeat it.
-      await message.channel.sendTyping();
-      typingInterval = setInterval(() => {
-        message.channel.sendTyping();
-      }, 9000); // Discord's typing indicator lasts for 10 seconds.
-
-      const botMentionRegex = new RegExp(`<@!?${darvishiClient.user!.id}>`, 'g');
-      let processedPrompt = message.content.replace(botMentionRegex, '');
-
-      // Replace any remaining user mentions with their usernames for the agent's context.
-      message.mentions.users.forEach(user => {
-        if (user.id !== darvishiClient.user!.id) {
-          const otherMentionRegex = new RegExp(`<@!?${user.id}>`, 'g');
-          processedPrompt = processedPrompt.replace(otherMentionRegex, `@${user.username}`);
-        }
-      });
-
-      const rawUserPrompt = processedPrompt.trim();
-      const userTag = message.author.tag;
-      const currentDate = new Date().toUTCString(); // The agent's persona is instructed to use this.
-
-      // Prepend the user's tag and current date to the prompt to give the agent context.
-      const userPrompt = `(User: ${userTag}, Current Date: ${currentDate})\n\n${rawUserPrompt}`;
-
-      const responseBlocks: string[] = [];
-      const responseStream = await darvishiAgent.stream(userPrompt, {
-        memory: {
-          // Use the channel ID as the resource to create a shared memory for the entire channel.
-          resource: message.channelId,
-          // Use the channel ID as the thread ID to maintain a single conversation per channel.
-          thread: message.channelId,
-        },
-        onStepFinish: async stepResult => {
-          // A step can have both text and tool calls.
-          // We add the text first, then the tool call announcement.
-
-          // The `text` property on `stepResult` contains the full text generated in that step.
-          if (stepResult.text) {
-            responseBlocks.push(stepResult.text.trim());
-          }
-
-          // Check if the agent decided to use a tool in this step.
-          if (stepResult.toolCalls && stepResult.toolCalls.length > 0) {
-            const toolNames = stepResult.toolCalls.map(tc => `\`${tc.toolName}\``).join(', ');
-            responseBlocks.push(`> *Checking the system: ${toolNames}...*`);
-          }
-        },
-      });
-
-      // We must consume the stream for the process to complete and for `onStepFinish` to be called.
-      // We can simply iterate through the text stream without accumulating the chunks,
-      // as we are building our response from the step results.
-      for await (const _ of responseStream.textStream) {
-        // Consuming the stream...
-      }
-
-      // Join the text from each step with a double newline to create an empty line between them.
-      const fullResponse = responseBlocks.join('\n\n');
-
-      if (fullResponse) {
-        if (fullResponse.length <= 2000) {
-          await message.reply(fullResponse);
-        } else {
-          // Response is too long, send in chunks based on logical blocks.
-          const messagesToSend: string[] = [];
-          let currentMessage = '';
-
-          for (const block of responseBlocks) {
-            // If a single block is longer than the limit, it must be chunked.
-            if (block.length > 2000) {
-              if (currentMessage.length > 0) {
-                messagesToSend.push(currentMessage);
-                currentMessage = '';
-              }
-              for (let i = 0; i < block.length; i += 2000) {
-                messagesToSend.push(block.substring(i, i + 2000));
-              }
-              continue;
-            }
-
-            const separator = currentMessage.length > 0 ? '\n\n' : '';
-            if (currentMessage.length + separator.length + block.length > 2000) {
-              messagesToSend.push(currentMessage);
-              currentMessage = block;
-            } else {
-              currentMessage += separator + block;
-            }
-          }
-
-          if (currentMessage.length > 0) {
-            messagesToSend.push(currentMessage);
-          }
-
-          // Send the messages
-          if (messagesToSend.length > 0) {
-            await message.reply(messagesToSend[0]);
-            for (let i = 1; i < messagesToSend.length; i++) {
-              await message.channel.send(messagesToSend[i]);
-            }
-          }
-        }
-      } else {
-        await message.reply("Darvishi seems to have nothing to say about that.");
-      }
-    } catch (error) {
-      logger.error('Error processing message:', error);
-      await message.reply('Sorry, I ran into an error. Please try again.');
-    } finally {
-      // Ensure the typing indicator is always stopped.
-      if (typingInterval) {
-        clearInterval(typingInterval);
-      }
-    }
-  });
-});
-
-lyraClient.on(Events.MessageCreate, async message => {
-  // Only respond if the bot is mentioned
-  if (!message.mentions.has(lyraClient.user.id)) return;
-  
-  // Add the message processing logic to the queue for this channel.
-  // This ensures that messages in the same channel are processed sequentially.
-  lyraRequestQueue.addToQueue(message.channelId, async () => {
-    let typingInterval: NodeJS.Timeout | undefined;
-    try {
-      // Start a typing indicator that will run for the duration of the agent's work.
-      // We call it once immediately, then set an interval to repeat it.
-      await message.channel.sendTyping();
-      typingInterval = setInterval(() => {
-        message.channel.sendTyping();
-      }, 9000); // Discord's typing indicator lasts for 10 seconds.
-
-      const botMentionRegex = new RegExp(`<@!?${lyraClient.user!.id}>`, 'g');
-      let processedPrompt = message.content.replace(botMentionRegex, '');
-
-      // Replace any remaining user mentions with their usernames for the agent's context.
-      message.mentions.users.forEach(user => {
-        if (user.id !== lyraClient.user!.id) {
-          const otherMentionRegex = new RegExp(`<@!?${user.id}>`, 'g');
-          processedPrompt = processedPrompt.replace(otherMentionRegex, `@${user.username}`);
-        }
-      });
-
-      const rawUserPrompt = processedPrompt.trim();
-      const userTag = message.author.tag;
-      const currentDate = new Date().toUTCString(); // The agent's persona is instructed to use this.
-
-      // Prepend the user's tag and current date to the prompt to give the agent context.
-      const userPrompt = `(User: ${userTag}, Current Date: ${currentDate})\n\n${rawUserPrompt}`;
-
-      const responseBlocks: string[] = [];
-      const responseStream = await lyraAgent.stream(userPrompt, {
-        memory: {
-          // Use the channel ID as the resource to create a shared memory for the entire channel.
-          resource: message.channelId,
-          // Use the channel ID as the thread ID to maintain a single conversation per channel.
-          thread: message.channelId,
-        },
-        onStepFinish: async stepResult => {
-          // A step can have both text and tool calls.
-          // We add the text first, then the tool call announcement.
-
-          // The `text` property on `stepResult` contains the full text generated in that step.
-          if (stepResult.text) {
-            responseBlocks.push(stepResult.text.trim());
-          }
-
-          // Check if the agent decided to use a tool in this step.
-          if (stepResult.toolCalls && stepResult.toolCalls.length > 0) {
-            const toolNames = stepResult.toolCalls.map(tc => `\`${tc.toolName}\``).join(', ');
-            responseBlocks.push(`> *Checking the system: ${toolNames}...*`);
-          }
-        },
-      });
-
-      // We must consume the stream for the process to complete and for `onStepFinish` to be called.
-      // We can simply iterate through the text stream without accumulating the chunks,
-      // as we are building our response from the step results.
-      for await (const _ of responseStream.textStream) {
-        // Consuming the stream...
-      }
-
-      // Join the text from each step with a double newline to create an empty line between them.
-      const fullResponse = responseBlocks.join('\n\n');
-
-      if (fullResponse) {
-        if (fullResponse.length <= 2000) {
-          await message.reply(fullResponse);
-        } else {
-          // Response is too long, send in chunks based on logical blocks.
-          const messagesToSend: string[] = [];
-          let currentMessage = '';
-
-          for (const block of responseBlocks) {
-            // If a single block is longer than the limit, it must be chunked.
-            if (block.length > 2000) {
-              if (currentMessage.length > 0) {
-                messagesToSend.push(currentMessage);
-                currentMessage = '';
-              }
-              for (let i = 0; i < block.length; i += 2000) {
-                messagesToSend.push(block.substring(i, i + 2000));
-              }
-              continue;
-            }
-
-            const separator = currentMessage.length > 0 ? '\n\n' : '';
-            if (currentMessage.length + separator.length + block.length > 2000) {
-              messagesToSend.push(currentMessage);
-              currentMessage = block;
-            } else {
-              currentMessage += separator + block;
-            }
-          }
-
-          if (currentMessage.length > 0) {
-            messagesToSend.push(currentMessage);
-          }
-
-          // Send the messages
-          if (messagesToSend.length > 0) {
-            await message.reply(messagesToSend[0]);
-            for (let i = 1; i < messagesToSend.length; i++) {
-              await message.channel.send(messagesToSend[i]);
-            }
-          }
-        }
-      } else {
-        await message.reply("Lyra seems to have nothing to say about that.");
-      }
-    } catch (error) {
-      logger.error('Error processing message:', error);
-      await message.reply('Sorry, I ran into an error. Please try again.');
-    } finally {
-      // Ensure the typing indicator is always stopped.
-      if (typingInterval) {
-        clearInterval(typingInterval);
-      }
-    }
-  });
-});
+// Setup and login Discord bots
+setupDiscordBot(darvishiAgent, darvishiToken, 'Darvishi');
+setupDiscordBot(lyraAgent, lyraToken, 'Lyra');
 
 // Start the MCP Server to expose agents as tools
 const mcpPort = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 4000;
@@ -347,7 +65,3 @@ httpServer.on('error', (error) => {
   logger.error('Failed to start MCP Server:', error);
   process.exit(1);
 });
-
-// Log in to Discord with your client's token
-darvishiClient.login(darvishiToken);
-lyraClient.login(lyraToken);
