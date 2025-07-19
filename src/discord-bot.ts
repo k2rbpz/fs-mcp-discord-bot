@@ -44,7 +44,9 @@ export function setupDiscordBot(agent: Agent, token: string, agentName: string) 
         const userTag = message.author.tag;
         const currentDate = new Date().toUTCString();
 
-        const userPrompt = `(User: ${userTag}, Current Date: ${currentDate})\n\n${rawUserPrompt}`;
+        const userPrompt = `(User: ${userTag}, Agent: ${agentName}, Current Date: ${currentDate})
+
+${rawUserPrompt}`;
 
         const responseBlocks: string[] = [];
         const responseStream = await agent.stream(userPrompt, {
