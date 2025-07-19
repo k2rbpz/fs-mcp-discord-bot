@@ -44,17 +44,9 @@ export const lyraAgent = new Agent({
   async tools() {
     // Ensure the cache for CoinGecko tools is up-to-date.
     await ensureCacheValidity();
-
-    // Fetch tools from the local agent server.
-    let localAgentTools: Record<string, Tool> = {};
-    try {
-      localAgentTools = await mcpLocalAgents.getTools();
-    } catch (error) {
-      console.error('Failed to load tools from local agent MCP server.', error);
-    }
-
-    // Combine tools from all sources.
-    return { ...(cachedTools || {}), ...localAgentTools };
+    
+    // Return only the CoinGecko tools.
+    return cachedTools || {};
   },
   memory: new Memory({
     storage: new LibSQLStore({
