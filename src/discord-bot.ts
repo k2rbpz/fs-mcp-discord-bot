@@ -72,38 +72,12 @@ ${rawUserPrompt}`;
         const fullResponse = responseBlocks.join('\n\n');
 
         if (fullResponse) {
-          if (fullResponse.length <= 2000) {
-            await message.reply(fullResponse);
-          } else {
-            const messagesToSend: string[] = [];
-            let currentMessage = '';
-            for (const block of responseBlocks) {
-              if (block.length > 2000) {
-                if (currentMessage.length > 0) {
-                  messagesToSend.push(currentMessage);
-                  currentMessage = '';
-                }
-                for (let i = 0; i < block.length; i += 2000) {
-                  messagesToSend.push(block.substring(i, i + 2000));
-                }
-                continue;
-              }
-              const separator = currentMessage.length > 0 ? '\n\n' : '';
-              if (currentMessage.length + separator.length + block.length > 2000) {
-                messagesToSend.push(currentMessage);
-                currentMessage = block;
-              } else {
-                currentMessage += separator + block;
-              }
-            }
-            if (currentMessage.length > 0) {
-              messagesToSend.push(currentMessage);
-            }
-            if (messagesToSend.length > 0) {
-              await message.reply(messagesToSend[0]);
-              for (let i = 1; i < messagesToSend.length; i++) {
-                await message.channel.send(messagesToSend[i]);
-              }
+          const chunks = splitResponse(fullResponse);
+          for (let i = 0; i < chunks.length; i++) {
+            if (i === 0) {
+              await message.reply(chunks[i]);
+            } else {
+              await message.channel.send(chunks[i]);
             }
           }
         } else {
@@ -122,4 +96,103 @@ ${rawUserPrompt}`;
 
   client.login(token);
   return client;
+}
+
+function splitResponse(response: string): string[] {
+  const limit = 2000;
+  if (response.length <= limit) {
+    return [response];
+  }
+
+  const chunks: string[] = [];
+  const codeBlockRegex = /```([a-z]*)\n([\s\S]*?)```/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = codeBlockRegex.exec(response)) !== null) {
+    const [fullMatch, language, code] = match;
+    const precedingText = response.substring(lastIndex, match.index);
+    if (precedingText) {
+      chunks.push(...splitText(precedingText, limit));
+    }
+
+    if (fullMatch.length <= limit) {
+      chunks.push(fullMatch);
+    } else {
+      const codeLines = code.split('\n');
+      let currentChunk = `\`\`\`${language}\n`;
+      for (const line of codeLines) {
+        if (currentChunk.length + line.length + 4 > limit) {
+          chunks.push(currentChunk + '```');
+          currentChunk = `\`\`\`${language}\n`;
+        }
+        currentChunk += line + '\n';
+      }
+      chunks.push(currentChunk + '```');
+    }
+    lastIndex = codeBlockRegex.lastIndex;
+  }
+
+  const remainingText = response.substring(lastIndex);
+  if (remainingText) {
+    chunks.push(...splitText(remainingText, limit));
+  }
+
+  return chunks;
+}
+
+function splitText(text: string, limit: number): string[] {
+  if (text.length <= limit) {
+    return [text];
+  }
+
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  const paragraphs = text.split(/\n\n/g);
+  for (let i = 0; i < paragraphs.length; i++) {
+    const paragraph = paragraphs[i];
+    if (currentChunk.length + paragraph.length + 2 > limit) {
+      chunks.push(currentChunk);
+      currentChunk = '';
+    }
+    currentChunk += paragraph + (i < paragraphs.length - 1 ? '\n\n' : '');
+  }
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  const finalChunks: string[] = [];
+  for (const chunk of chunks) {
+    if (chunk.length > limit) {
+      finalChunks.push(...splitBy(chunk, limit, '\n'));
+    } else {
+      finalChunks.push(chunk);
+    }
+  }
+
+  return finalChunks;
+}
+
+function splitBy(text: string, limit: number, delimiter: string): string[] {
+  if (text.length <= limit) {
+    return [text];
+  }
+
+  const parts = text.split(delimiter);
+  const chunks: string[] = [];
+  let currentChunk = '';
+
+  for (const part of parts) {
+    if (currentChunk.length + part.length + delimiter.length > limit) {
+      chunks.push(currentChunk);
+      currentChunk = '';
+    }
+    currentChunk += part + delimiter;
+  }
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks;
 }
