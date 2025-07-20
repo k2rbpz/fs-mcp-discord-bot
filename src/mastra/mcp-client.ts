@@ -26,12 +26,8 @@ export const mcpFlipside = new MCPClient({
 export const mcpCoinGecko = new MCPClient({
   servers: {
     coingecko_mcp: {
-      command: "npx",
-      args: [
-        "mcp-remote",
-        "https://mcp.api.coingecko.com/sse",
-        "--tools=dynamic"
-      ]
+      url: new URL("https://mcp.api.coingecko.com/sse"),
+      timeout: 300000, // 5 minutes
     }
   },
 });
