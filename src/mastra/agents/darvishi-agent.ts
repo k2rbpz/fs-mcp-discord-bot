@@ -16,12 +16,25 @@ const cacheDuration: number = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
  */
 async function updateToolsCache() {
   try {
-    cachedTools = await mcpFlipside.getTools();
+    const rawTools = await mcpFlipside.getTools();
+    const optimizedTools: Record<string, Tool> = {};
+
+    // Process and shorten the description for each tool before caching.
+    for (const toolName in rawTools) {
+      const tool = rawTools[toolName];
+      // A simple but effective optimization: take only the first sentence.
+      const shortDescription = tool.description
+        ? tool.description.split('.')[0] + '.'
+        : 'No description available.';
+
+      optimizedTools[toolName] = { ...tool, description: shortDescription };
+    }
+
+    cachedTools = optimizedTools;
     lastUpdated = Date.now();
-    console.log('Successfully updated cached tools from mcpFlipside.');
+    console.log('Successfully updated and optimized cached tools from mcpFlipside.');
   } catch (error) {
     console.error('Failed to update tools from mcpFlipside.', error);
-    // You might want to handle errors more specifically, e.g., retry, use a fallback, etc.
   }
 }
 
@@ -39,8 +52,7 @@ async function ensureCacheValidity() {
 
 export const darvishiAgent = new Agent({
   name: 'Darvishi',
-  description: 'Provides growth-focused crypto analytics, on-chain data, and user scores using the Flipside MCP server. Can also retrieve current weather information.',
-  // You can easily switch between personas here, e.g., darvishiInstructions.kebabShop
+  description: 'Provides crypto analytics, on-chain data, and user scores from Flipside. Also gets weather.',
   instructions: darvishiInstructions.cosmicBored,
   model: google('gemini-2.5-flash'),
   async tools() {
