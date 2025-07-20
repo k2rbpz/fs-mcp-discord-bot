@@ -15,12 +15,25 @@ const cacheDuration: number = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
  */
 async function updateToolsCache() {
   try {
-    cachedTools = await mcpCoinGecko.getTools();
+    const rawTools = await mcpCoinGecko.getTools();
+    const optimizedTools: Record<string, Tool> = {};
+
+    // Process and shorten the description for each tool before caching.
+    for (const toolName in rawTools) {
+      const tool = rawTools[toolName];
+      // A simple but effective optimization: take only the first sentence.
+      const shortDescription = tool.description
+        ? tool.description.split('.')[0] + '.'
+        : 'No description available.';
+
+      optimizedTools[toolName] = { ...tool, description: shortDescription };
+    }
+
+    cachedTools = optimizedTools;
     lastUpdated = Date.now();
-    console.log('Successfully updated cached tools from mcpCoinGecko.');
+    console.log('Successfully updated and optimized cached tools from mcpCoinGecko.');
   } catch (error) {
     console.error('Failed to update tools from mcpCoinGecko.', error);
-    // You might want to handle errors more specifically, e.g., retry, use a fallback, etc.
   }
 }
 
@@ -38,8 +51,8 @@ async function ensureCacheValidity() {
 
 export const lyraAgent = new Agent({
   name: 'Lyra',
-  description: 'Retrieves cryptocurrency token facts and market data, such as prices and trading volume, via the CoinGecko MCP server.',
-  instructions: lyraInstructions.archivistOfTheEther,
+  description: 'Fetches crypto data (prices, volume, etc.) from CoinGecko.',
+  instructions: lyraInstructions.geckoGuide,
   model: google('gemini-2.5-flash'),
   async tools() {
     // Ensure the cache for CoinGecko tools is up-to-date.
