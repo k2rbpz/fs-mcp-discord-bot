@@ -41,7 +41,7 @@ export const darvishiAgent = new Agent({
   name: 'Darvishi',
   description: 'Provides growth-focused crypto analytics, on-chain data, and user scores using the Flipside MCP server. Can also retrieve current weather information.',
   // You can easily switch between personas here, e.g., darvishiInstructions.kebabShop
-  instructions: darvishiInstructions.archivistOfTheEther,
+  instructions: darvishiInstructions.cosmicBored,
   model: google('gemini-2.5-flash'),
   async tools() {
     // Ensure the cache for Flipside tools is up-to-date.
