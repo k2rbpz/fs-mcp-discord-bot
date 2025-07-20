@@ -39,7 +39,7 @@ async function ensureCacheValidity() {
 export const lyraAgent = new Agent({
   name: 'Lyra',
   description: 'Retrieves cryptocurrency token facts and market data, such as prices and trading volume, via the CoinGecko MCP server.',
-  instructions: lyraInstructions.archivistOfTheEther,
+  instructions: lyraInstructions.geckoGuide,
   model: google('gemini-2.5-flash'),
   async tools() {
     // Ensure the cache for CoinGecko tools is up-to-date.
