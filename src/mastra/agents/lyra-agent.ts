@@ -9,7 +9,7 @@ export const lyraAgent = new Agent({
   name: 'Lyra',
   description: 'Fetches crypto data (prices, volume, etc.) from CoinGecko.',
   instructions: lyraInstructions.geckoGuide,
-  model: google('gemini-2.5-flash-lite'),
+  model: google('gemini-2.0-flash'),
   tools: () => toolRegistry.coingecko.getTools(),
   memory: new Memory({
     storage: new LibSQLStore({
