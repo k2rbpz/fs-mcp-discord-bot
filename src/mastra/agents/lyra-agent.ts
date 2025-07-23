@@ -66,7 +66,7 @@ export const lyraAgent = new Agent({
       url: 'file:../mastra.db', // path is relative to the .mastra/output directory
     }),
     options: {
-      lastMessages: 50, // Adjust the memory depth here
+      lastMessages: 15, // Adjust the memory depth here
     },
   }),
 });
