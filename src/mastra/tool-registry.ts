@@ -63,6 +63,22 @@ class ToolCache {
 }
 
 /**
+ * Shortens the description of each tool in a toolset to the first sentence.
+ * @param toolset The toolset to process.
+ * @returns The toolset with shortened descriptions.
+ */
+const shortenDescriptions = (toolset: Toolset): Toolset => {
+  for (const key in toolset) {
+    const tool = toolset[key];
+    if (tool.description) {
+      const match = tool.description.match(/[^.!?]+[.!?]/);
+      tool.description = match ? match[0].trim() : tool.description;
+    }
+  }
+  return toolset;
+};
+
+/**
  * A registry for all the tool caches.
  *
  * @property {ToolCache} flipside - The cache for Flipside tools.
@@ -70,10 +86,13 @@ class ToolCache {
  * @property {ToolCache} local - The cache for local tools.
  */
 export const toolRegistry = {
-  flipside: new ToolCache('Flipside', mcpFlipside.getTools.bind(mcpFlipside)),
-  coingecko: new ToolCache(
-    'CoinGecko',
-    mcpCoinGecko.getTools.bind(mcpCoinGecko),
+  flipside: new ToolCache('Flipside', async () =>
+    shortenDescriptions(await mcpFlipside.getTools()),
   ),
-  local: new ToolCache('Local', mcpLocalAgents.getTools.bind(mcpLocalAgents)),
+  coingecko: new ToolCache('CoinGecko', async () =>
+    shortenDescriptions(await mcpCoinGecko.getTools()),
+  ),
+  local: new ToolCache('Local', async () =>
+    shortenDescriptions(await mcpLocalAgents.getTools()),
+  ),
 };
