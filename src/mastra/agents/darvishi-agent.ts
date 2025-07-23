@@ -3,7 +3,6 @@ import { Agent } from '@mastra/core/agent';
 import { Tool } from '@mastra/core/tool';
 import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
-import { weatherTool } from '../tools/weather-tool';
 import { mcpFlipside, mcpLocalAgents } from '../mcp-client';
 import { darvishiInstructions } from './darvishi-instructions';
 
@@ -52,7 +51,7 @@ async function ensureCacheValidity() {
 
 export const darvishiAgent = new Agent({
   name: 'Darvishi',
-  description: 'Provides crypto analytics, on-chain data, and user scores from Flipside. Also gets weather.',
+  description: 'Provides crypto analytics, on-chain data, and user scores from Flipside.',
   instructions: darvishiInstructions.cosmicBored,
   model: google('gemini-2.5-flash'),
   async tools() {
@@ -68,7 +67,7 @@ export const darvishiAgent = new Agent({
     }
 
     // Combine tools from all sources.
-    return { weatherTool, ...(cachedTools || {}), ...localAgentTools };
+    return { ...(cachedTools || {}), ...localAgentTools };
   },
   memory: new Memory({
     storage: new LibSQLStore({

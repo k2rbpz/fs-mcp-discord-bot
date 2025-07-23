@@ -8,7 +8,6 @@ This project is a Discord bot built with the [Mastra](https://mastra.ai/) framew
 -   **Darvishi Agent**: A sophisticated agent with a unique, "perpetually overworked and slightly fed up" persona, powered by Google's Gemini model.
 -   **Tool Integration**:
     -   **External Tools**: Seamlessly accesses on-chain data tools from the Flipside Crypto MCP server.
-    -   **Local Tools**: Includes a custom `weatherTool` to fetch weather forecasts.
 -   **Discord Integration**: Runs as a Discord bot, ready to interact in any server it's invited to.
 -   **Persistent Memory**: Uses a local LibSQL/SQLite database (`mastra.db`) for conversation memory, allowing for stateful interactions.
 
