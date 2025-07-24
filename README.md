@@ -1,13 +1,14 @@
 # Mastra Discord Bot with Flipside MCP
 
-This project is a Discord bot built with the [Mastra](https://mastra.ai/) framework. It features a conversational agent named "Darvishi" that connects to Flipside Crypto's [Multi-Chain Proxy (MCP)](https://mastra.ai/docs/mcp/overview) to access on-chain data tools.
+This project is a Discord bot built with the [Mastra](https://mastra.ai/) framework. It demonstrates how to build and run conversational AI agents that can interact with tools from remote Model Context Protocol (MCP) servers and be reached through Discord.
 
 ## Features
 
 -   **Mastra Framework**: Leverages Mastra for building complex AI agents and workflows.
--   **Darvishi Agent**: A sophisticated agent with a unique, "perpetually overworked and slightly fed up" persona, powered by Google's Gemini model.
+-   **Conversational Agents**: The project includes multiple AI agents, each with distinct personas and capabilities, powered by Google's Gemini models.
 -   **Tool Integration**:
-    -   **External Tools**: Seamlessly accesses on-chain data tools from the Flipside Crypto MCP server.
+    -   **Flipside MCP Tools**: Agents seamlessly access on-chain data tools from Flipside Crypto's Model Context Protocol (MCP) server.
+    -   **CoinGecko MCP Tools**: Agents can also fetch crypto market data (prices, volume, etc.) from CoinGecko via MCP.
 -   **Discord Integration**: Runs as a Discord bot, ready to interact in any server it's invited to.
 -   **Persistent Memory**: Uses a local LibSQL/SQLite database (`mastra.db`) for conversation memory, allowing for stateful interactions.
 
@@ -43,10 +44,11 @@ You'll need to provide API keys for the Flipside MCP server and Discord.
     ```bash
     cp .env.example .env
     ```
-2.  Open the `.env` file and add your keys. You will need a `DISCORD_BOT_TOKEN` from the Discord Developer Portal and a `FLIPSIDE_API_KEY` from Flipside Crypto.
+2.  Open the `.env` file and add your keys. You will need `DISCORD_TOKEN_DARVISHI` and `DISCORD_TOKEN_LYRA` from the Discord Developer Portal (one for each bot), and a `FLIPSIDE_API_KEY` from Flipside Crypto.
     Your `.env` file should look like this:
     ```.env
-    DISCORD_TOKEN="your_discord_token_here"
+    DISCORD_TOKEN_DARVISHI="your_darvishi_discord_token_here"
+    DISCORD_TOKEN_LYRA="your_lyra_discord_token_here"
     FLIPSIDE_API_KEY="your_flipside_api_key_here"
     ```
 
@@ -56,14 +58,6 @@ This command runs the built application from the .mastra/output directory.
 
 ```bash
 pnpm run start
-```
-
-## Running the Discord Bot (backup)
-
-To run the bot in a development environment using `tsx` for on-the-fly TypeScript execution, use the following command:
-
-```bash
-pnpm exec tsx src/main.ts
 ```
 
 Once executed, you will see a confirmation message in your console, and the bot should appear online in Discord.
