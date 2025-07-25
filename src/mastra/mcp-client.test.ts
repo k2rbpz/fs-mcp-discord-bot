@@ -2,6 +2,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MCPClient } from '@mastra/mcp';
 
+// Mock dotenv/config to prevent it from loading the .env file during tests.
+// This allows us to control process.env for each test case.
+vi.mock('dotenv/config', () => ({}));
+
 // Store original environment to restore after tests
 const originalEnv = { ...process.env };
 

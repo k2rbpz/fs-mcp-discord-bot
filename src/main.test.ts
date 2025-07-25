@@ -3,6 +3,10 @@ import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 
 // --- Mocks ---
 
+// Mock dotenv/config to prevent it from loading the .env file during tests.
+// This allows us to control process.env for each test case.
+vi.mock('dotenv/config', () => ({}));
+
 // Mock dependencies before they are imported by main.ts
 const mockHttpServer = {
   listen: vi.fn(),
