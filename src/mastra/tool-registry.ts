@@ -8,13 +8,23 @@ type Toolset = Record<string, Tool>;
 const CACHE_DURATION = 6 * 60 * 60 * 1000;
 
 /**
+ * Represents a tool description with both original and summarized versions.
+ */
+export type ToolDescription = {
+  original: string;
+  summarized: string;
+};
+
+/**
  * A class that manages the caching of a set of tools.
  *
- * @property {Toolset | undefined} cachedTools - The cached tools.
+ * @property {Toolset | undefined} cachedTools - The cached tools with original descriptions.
+ * @property {Toolset | undefined} cachedSummarizedTools - The cached tools with summarized descriptions.
  * @property {number} lastUpdated - The timestamp of the last cache update.
  */
 class ToolCache {
   private cachedTools: Toolset | undefined;
+  private cachedSummarizedTools: Toolset | undefined;
   private lastUpdated = 0;
   private updatePromise: Promise<void> | null = null;
   private fetcher: () => Promise<Toolset>; // Make fetcher a property
@@ -40,6 +50,7 @@ class ToolCache {
     this.fetcher = newFetcher;
     // Invalidate cache to force a re-fetch with the new fetcher
     this.cachedTools = undefined;
+    this.cachedSummarizedTools = undefined;
     this.lastUpdated = 0;
     this.updatePromise = null;
   }
@@ -47,9 +58,10 @@ class ToolCache {
   /**
    * Retrieves the tools, updating the cache if it's stale.
    *
+   * @param {boolean} summarized - Whether to return summarized tool descriptions.
    * @returns {Promise<Toolset>} The toolset.
    */
-  async getTools(): Promise<Toolset> {
+  async getTools(summarized: boolean): Promise<Toolset> {
     // If the cache is stale and an update is not already in progress, start one.
     if (this.isCacheStale() && !this.updatePromise) {
       // The promise is stored so that concurrent requests can wait for the same update.
@@ -60,7 +72,7 @@ class ToolCache {
     if (this.updatePromise) {
       await this.updatePromise;
     }
-    return this.cachedTools ?? {};
+    return (summarized ? this.cachedSummarizedTools : this.cachedTools) ?? {};
   }
 
   /**
@@ -77,7 +89,9 @@ class ToolCache {
    */
   private async updateCache(): Promise<void> {
     try {
-      this.cachedTools = await this.fetcher();
+      const originalTools = await this.fetcher();
+      this.cachedTools = originalTools;
+      this.cachedSummarizedTools = shortenDescriptions(originalTools);
       this.lastUpdated = Date.now();
     } catch (error) {
       console.error(`Failed to update ${this.name} tools:`, error);
@@ -98,14 +112,16 @@ class ToolCache {
  * @returns The toolset with shortened descriptions.
  */
 const shortenDescriptions = (toolset: Toolset): Toolset => {
+  const summarizedToolset: Toolset = {};
   for (const key in toolset) {
-    const tool = toolset[key];
+    const tool = { ...toolset[key] }; // Create a shallow copy to avoid modifying the original
     if (tool.description) {
       const match = tool.description.match(/[^.!?]+[.!?]/);
       tool.description = match ? match[0].trim() : tool.description;
     }
+    summarizedToolset[key] = tool;
   }
-  return toolset;
+  return summarizedToolset;
 };
 
 /**
@@ -116,17 +132,11 @@ const shortenDescriptions = (toolset: Toolset): Toolset => {
  * @property {ToolCache} local - The cache for local tools.
  */
 export const toolRegistry = {
-  flipside: new ToolCache('Flipside', async () =>
-    shortenDescriptions(await mcpFlipside.getTools()),
-  ),
-  coingecko: new ToolCache('CoinGecko', async () =>
-    shortenDescriptions(await mcpCoinGecko.getTools()),
-  ),
+  flipside: new ToolCache('Flipside', async () => mcpFlipside.getTools()),
+  coingecko: new ToolCache('CoinGecko', async () => mcpCoinGecko.getTools()),
   local: new ToolCache('Local', async () => ({})), // Initialize with an empty fetcher
 };
 
 export const initializeLocalToolCache = () => {
-  toolRegistry.local.setFetcher(async () =>
-    shortenDescriptions(await mcpLocalAgents.getTools()),
-  );
+  toolRegistry.local.setFetcher(async () => mcpLocalAgents.getTools());
 };
