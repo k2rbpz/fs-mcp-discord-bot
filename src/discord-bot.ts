@@ -61,6 +61,12 @@ ${rawUserPrompt}`;
             thread: message.channelId,
           },
           onStepFinish: async stepResult => {
+          if (stepResult.error) {
+              logger.error(`Step failed: ${stepResult.error}`);
+              await message.reply(`Sorry, one of the tools ran into an error: ${stepResult.error.message}`);
+              throw stepResult.error; // Stop further processing
+            }
+
             if (stepResult.text) {
               responseBlocks.push(stepResult.text.trim());
               // Check if the step involves a tool call (likely from a local agent)
