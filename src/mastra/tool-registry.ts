@@ -17,6 +17,7 @@ class ToolCache {
   private cachedTools: Toolset | undefined;
   private lastUpdated = 0;
   private updatePromise: Promise<void> | null = null;
+  private fetcher: () => Promise<Toolset>; // Make fetcher a property
 
   /**
    * Creates a new ToolCache instance.
@@ -26,8 +27,22 @@ class ToolCache {
    */
   constructor(
     private readonly name: string,
-    private readonly fetcher: () => Promise<Toolset>,
-  ) {}
+    fetcher: () => Promise<Toolset>, // Accept fetcher in constructor
+  ) {
+    this.fetcher = fetcher; // Assign it to the property
+  }
+
+  /**
+   * Sets a new fetcher function for the tool cache.
+   * @param {() => Promise<Toolset>} newFetcher - The new function that fetches the tools.
+   */
+  public setFetcher(newFetcher: () => Promise<Toolset>): void {
+    this.fetcher = newFetcher;
+    // Invalidate cache to force a re-fetch with the new fetcher
+    this.cachedTools = undefined;
+    this.lastUpdated = 0;
+    this.updatePromise = null;
+  }
 
   /**
    * Retrieves the tools, updating the cache if it's stale.
@@ -107,7 +122,11 @@ export const toolRegistry = {
   coingecko: new ToolCache('CoinGecko', async () =>
     shortenDescriptions(await mcpCoinGecko.getTools()),
   ),
-  local: new ToolCache('Local', async () =>
+  local: new ToolCache('Local', async () => ({})), // Initialize with an empty fetcher
+};
+
+export const initializeLocalToolCache = () => {
+  toolRegistry.local.setFetcher(async () =>
     shortenDescriptions(await mcpLocalAgents.getTools()),
-  ),
+  );
 };

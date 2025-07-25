@@ -4,6 +4,8 @@ import { mastra, logger } from './mastra';
 import { mcpServer } from './mastra/mcp-server';
 import { setupDiscordBot } from './discord-bot';
 
+import { initializeLocalToolCache } from './mastra/tool-registry';
+
 // Get agents from the Mastra instance
 const darvishiAgent = mastra.getAgent('darvishiAgent');
 const lyraAgent = mastra.getAgent('lyraAgent');
@@ -59,6 +61,7 @@ const httpServer = createServer(async (req, res) => {
 
 httpServer.listen(mcpPort, () => {
   logger.info(`MCP Server running and exposing agents as tools on http://localhost:${mcpPort}/sse`);
+  initializeLocalToolCache(); // Initialize local tool cache after server starts
 });
 
 httpServer.on('error', (error) => {
