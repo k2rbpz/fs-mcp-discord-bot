@@ -5,7 +5,7 @@ import { mcpCoinGecko, mcpFlipside, mcpLocalAgents } from './mcp-client';
 type Toolset = Record<string, Tool>;
 
 // The duration for which the cache is considered valid (6 hours in milliseconds).
-const CACHE_DURATION = 6 * 60 * 60 * 1000;
+const CACHE_DURATION = 1 * 60 * 60 * 1000;
 
 /**
  * Represents a tool description with both original and summarized versions.
