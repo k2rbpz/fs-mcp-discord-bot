@@ -4,8 +4,8 @@ import { mcpCoinGecko, mcpFlipside, mcpLocalAgents } from './mcp-client';
 // An object that defines a set of tools that can be used by an agent.
 type Toolset = Record<string, Tool>;
 
-// The duration for which the cache is considered valid (12 hours in milliseconds).
-const CACHE_DURATION = 12 * 60 * 60 * 1000;
+// The duration for which the cache is considered valid (6 hours in milliseconds).
+const CACHE_DURATION = 6 * 60 * 60 * 1000;
 
 /**
  * A class that manages the caching of a set of tools.
@@ -16,6 +16,7 @@ const CACHE_DURATION = 12 * 60 * 60 * 1000;
 class ToolCache {
   private cachedTools: Toolset | undefined;
   private lastUpdated = 0;
+  private updatePromise: Promise<void> | null = null;
 
   /**
    * Creates a new ToolCache instance.
@@ -34,8 +35,15 @@ class ToolCache {
    * @returns {Promise<Toolset>} The toolset.
    */
   async getTools(): Promise<Toolset> {
-    if (this.isCacheStale()) {
-      await this.updateCache();
+    // If the cache is stale and an update is not already in progress, start one.
+    if (this.isCacheStale() && !this.updatePromise) {
+      // The promise is stored so that concurrent requests can wait for the same update.
+      this.updatePromise = this.updateCache();
+    }
+
+    // If an update is in progress, wait for it to complete.
+    if (this.updatePromise) {
+      await this.updatePromise;
     }
     return this.cachedTools ?? {};
   }
@@ -52,12 +60,19 @@ class ToolCache {
   /**
    * Updates the tool cache.
    */
-  private async updateCache() {
+  private async updateCache(): Promise<void> {
     try {
       this.cachedTools = await this.fetcher();
       this.lastUpdated = Date.now();
     } catch (error) {
       console.error(`Failed to update ${this.name} tools:`, error);
+      // Re-throw the error to prevent the agent from being initialized
+      // with an empty toolset, which would lead to a silent failure.
+      throw new Error(`Failed to fetch tools for ${this.name}.`);
+    } finally {
+      // The update process is complete (either success or failure),
+      // so clear the promise to allow for future updates.
+      this.updatePromise = null;
     }
   }
 }

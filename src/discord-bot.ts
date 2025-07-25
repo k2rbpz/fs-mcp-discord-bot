@@ -41,6 +41,12 @@ export function setupDiscordBot(agent: Agent, token: string, agentName: string) 
         });
 
         const rawUserPrompt = processedPrompt.trim();
+        if (!rawUserPrompt) {
+          await message.reply(`You mentioned me, but you didn't say anything! How can I help?`);
+          // No need to continue if there's no prompt
+          return;
+        }
+
         const userTag = message.author.tag;
         const currentDate = new Date().toUTCString();
 
@@ -55,6 +61,12 @@ ${rawUserPrompt}`;
             thread: message.channelId,
           },
           onStepFinish: async stepResult => {
+          if (stepResult.error) {
+              logger.error(`Step failed: ${stepResult.error}`);
+              await message.reply(`Sorry, one of the tools ran into an error: ${stepResult.error.message}`);
+              throw stepResult.error; // Stop further processing
+            }
+
             if (stepResult.text) {
               responseBlocks.push(stepResult.text.trim());
               // Check if the step involves a tool call (likely from a local agent)
@@ -77,10 +89,14 @@ ${rawUserPrompt}`;
           // Consuming the stream...
         }
 
-        const fullResponse = responseBlocks.join('\n\n');
+        const initialResponse = responseBlocks.join('\n\n');
+        const isStuckAfterToolCall =
+          responseBlocks.length > 0 &&
+          responseBlocks[responseBlocks.length - 1].startsWith('> *Checking the system:');
 
-        if (fullResponse) {
-          const chunks = splitResponse(fullResponse);
+        // Send the initial (potentially incomplete) response if it's not empty.
+        if (initialResponse.trim()) {
+          const chunks = splitResponse(initialResponse);
           for (let i = 0; i < chunks.length; i++) {
             if (i === 0) {
               await message.reply(chunks[i]);
@@ -88,8 +104,38 @@ ${rawUserPrompt}`;
               await message.channel.send(chunks[i]);
             }
           }
-        } else {
+        }
+
+        // Now, handle the end states.
+        if (isStuckAfterToolCall) {
+          // Case: Stuck after tool call. Inform the user and attempt an automatic retry.
+          await message.channel.sendTyping();
+          await message.channel.send(`*...it seems I got stuck. Let me try to pick up where I left off.*`);
+
+          const retryPrompt = `My thought process was interrupted after the last tool call. Please analyze the tool results from the previous step and provide the final summary.`;
+
+          const retryStream = await agent.stream(retryPrompt, {
+            memory: { resource: message.channelId, thread: message.channelId },
+          });
+
+          let fullRetryResponse = '';
+          for await (const chunk of retryStream.textStream) {
+            fullRetryResponse += chunk;
+          }
+
+          if (fullRetryResponse.trim()) {
+            const retryChunks = splitResponse(fullRetryResponse.trim());
+            for (const chunk of retryChunks) {
+              await message.channel.send(chunk);
+            }
+          } else {
+            await message.channel.send(`*I tried again, but I'm still unable to complete the thought. My apologies.*`);
+          }
+        } else if (!initialResponse.trim()) {
+          // Case: No response was generated at all.
           await message.reply(`${agentName} seems to have nothing to say about that.`);
+        } else {
+          // Case: The initial response was complete and sent successfully. Do nothing.
         }
       } catch (error) {
         logger.error('Error processing message:', error);
