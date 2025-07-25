@@ -41,6 +41,12 @@ export function setupDiscordBot(agent: Agent, token: string, agentName: string) 
         });
 
         const rawUserPrompt = processedPrompt.trim();
+        if (!rawUserPrompt) {
+          await message.reply(`You mentioned me, but you didn't say anything! How can I help?`);
+          // No need to continue if there's no prompt
+          return;
+        }
+
         const userTag = message.author.tag;
         const currentDate = new Date().toUTCString();
 
