@@ -15,6 +15,7 @@ if (!coingeckoProApiKey) {
 
 // Create MCPClient instance with the external server
 export const mcpFlipside = new MCPClient({
+  id: 'mcp-flipside-client',
   servers: {
     flipside: { // Name the external server
       url: new URL(`https://mcp.flipsidecrypto.xyz/beta/sse?apiKey=${flipsideApiKey}`),
@@ -24,6 +25,7 @@ export const mcpFlipside = new MCPClient({
 });
 
 export const mcpCoinGecko = new MCPClient({
+  id: 'mcp-coingecko-client',
   servers: {
     coingecko_mcp: {
       url: new URL("https://mcp.api.coingecko.com/sse"),
@@ -36,6 +38,7 @@ export const mcpCoinGecko = new MCPClient({
 // This enables agents to use other agents as tools.
 const mcpPort = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 4000;
 export const mcpLocalAgents = new MCPClient({
+  id: 'mcp-local-agents-client',
   servers: {
     local_agents: {
       url: new URL(`http://localhost:${mcpPort}/sse`),
