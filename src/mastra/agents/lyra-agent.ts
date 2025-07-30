@@ -10,7 +10,7 @@ export const createLyraAgent = (useSummarizedTools: boolean) => {
     name: 'Lyra',
     description: 'Fetches crypto data (prices, volume, etc.) from CoinGecko.',
     instructions: lyraInstructions.geckoGuide,
-    model: google('gemini-2.0-flash'),
+    model: google('gemini-2.5-flash'),
     async tools() {
       const allCoinGeckoTools = await toolRegistry.coingecko.getTools(useSummarizedTools);
 
