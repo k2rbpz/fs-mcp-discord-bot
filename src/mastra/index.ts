@@ -23,4 +23,11 @@ export const mastra = new Mastra({
     url: ":memory:",
   }),
   logger: logger,
+  telemetry: {
+    serviceName: "braintrust",
+    enabled: true,
+    export: {
+      type: "otlp",
+    },
+  },
 });
