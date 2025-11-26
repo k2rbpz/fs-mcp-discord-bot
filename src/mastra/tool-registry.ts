@@ -125,6 +125,21 @@ const shortenDescriptions = (toolset: Toolset): Toolset => {
 };
 
 /**
+ * Removes outputSchema from tools to avoid ZodNull issues with Gemini.
+ * @param toolset The toolset to process.
+ * @returns The toolset with outputSchema removed.
+ */
+const sanitizeTools = (toolset: Toolset): Toolset => {
+  const sanitizedToolset: Toolset = {};
+  for (const key in toolset) {
+    const tool = { ...toolset[key] };
+    delete tool.outputSchema;
+    sanitizedToolset[key] = tool;
+  }
+  return sanitizedToolset;
+};
+
+/**
  * A registry for all the tool caches.
  *
  * @property {ToolCache} flipside - The cache for Flipside tools.
@@ -132,7 +147,10 @@ const shortenDescriptions = (toolset: Toolset): Toolset => {
  * @property {ToolCache} local - The cache for local tools.
  */
 export const toolRegistry = {
-  flipside: new ToolCache('Flipside', async () => mcpFlipside.getTools()),
+  flipside: new ToolCache('Flipside', async () => {
+    const tools = await mcpFlipside.getTools();
+    return sanitizeTools(tools);
+  }),
   coingecko: new ToolCache('CoinGecko', async () => mcpCoinGecko.getTools()),
   local: new ToolCache('Local', async () => ({})), // Initialize with an empty fetcher
 };
