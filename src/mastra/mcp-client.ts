@@ -18,7 +18,7 @@ export const mcpFlipside = new MCPClient({
   id: 'mcp-flipside-client',
   servers: {
     flipside: { // Name the external server
-      url: new URL(`https://mcp.flipsidecrypto.xyz/mcp/public/mcp?apiKey=${flipsideApiKey}`),
+      url: new URL(`https://mcp.flipsidecrypto.xyz/mcp?apiKey=${flipsideApiKey}`),
       timeout: 300000, // 5 minutes
     }
   },
