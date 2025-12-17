@@ -4,8 +4,8 @@ import { mcpCoinGecko, mcpFlipside, mcpLocalAgents } from './mcp-client';
 // An object that defines a set of tools that can be used by an agent.
 type Toolset = Record<string, Tool>;
 
-// The duration for which the cache is considered valid (6 hours in milliseconds).
-const CACHE_DURATION = 1 * 60 * 60 * 1000;
+// The duration for which the cache is considered valid (2 minutes in milliseconds).
+const CACHE_DURATION = 2 * 60 * 1000;
 
 /**
  * Represents a tool description with both original and summarized versions.
