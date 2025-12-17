@@ -13,8 +13,44 @@ if (!coingeckoProApiKey) {
   throw new Error('COINGECKO_PRO_API_KEY is not set in the environment variables.');
 }
 
+class ResilientMCPClient {
+  private client: MCPClient;
+  private config: any;
+
+  constructor(config: any) {
+    this.config = config;
+    this.client = new MCPClient(config);
+  }
+
+  async getTools() {
+    try {
+      return await this.client.getTools();
+    } catch (error: any) {
+      if (
+        error?.message?.includes('session not found') ||
+        error?.toString().includes('session not found') ||
+        error?.message?.includes('Connection closed') // Also handle connection closed
+      ) {
+        console.log(`[${this.config.id}] Session lost or connection closed. Reconnecting...`);
+        try {
+          await this.client.disconnect();
+        } catch (disconnectError) {
+          console.warn(`[${this.config.id}] Error disconnecting old client:`, disconnectError);
+        }
+        this.client = new MCPClient(this.config);
+        return await this.client.getTools();
+      }
+      throw error;
+    }
+  }
+
+  async disconnect() {
+    return this.client.disconnect();
+  }
+}
+
 // Create MCPClient instance with the external server
-export const mcpFlipside = new MCPClient({
+export const mcpFlipside = new ResilientMCPClient({
   id: 'mcp-flipside-client',
   servers: {
     flipside: { // Name the external server
@@ -24,7 +60,7 @@ export const mcpFlipside = new MCPClient({
   },
 });
 
-export const mcpCoinGecko = new MCPClient({
+export const mcpCoinGecko = new ResilientMCPClient({
   id: 'mcp-coingecko-client',
   servers: {
     coingecko_mcp: {
@@ -37,7 +73,7 @@ export const mcpCoinGecko = new MCPClient({
 // Create a client to connect to the bot's own local MCP server.
 // This enables agents to use other agents as tools.
 const mcpPort = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT, 10) : 4000;
-export const mcpLocalAgents = new MCPClient({
+export const mcpLocalAgents = new ResilientMCPClient({
   id: 'mcp-local-agents-client',
   servers: {
     local_agents: {
